@@ -339,7 +339,9 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 '.nrrd.gz' : ['path/c.nrrd']
             }
         """
+        
         arguments=[]
+        print("arguments : ",arguments)
         for arg in args:
             if type(arg) == list:
                 arguments.extend(arg)
@@ -347,13 +349,14 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 arguments.append(arg)
         return {key: [i for i in glob.iglob(os.path.join(path,'**','*'),recursive=True) if i.endswith(key)] for key in arguments}
 
-	
+
     def Crop(self, ROI_Path):
 
         OutputPath = self.ui.editPathOutput.text
         suffix_namefile = self.ui.editSuffix.text
         #if self.ui.chooseType.currentIndex == 1:
         ScanListe =  self.Search(self.ui.editPathF.text,[".nii.gz",".nrrd.gz",".gipl.gz"])
+        print(ScanListe)
         for key,data in ScanListe.items():
             for patient_path in data:
                 patient = os.path.basename(patient_path).split('_Scan')[0].split('_scan')[0].split('_Or')[0].split('_OR')[0].split('_MAND')[0].split('_MD')[0].split('_MAX')[0].split('_MX')[0].split('_CB')[0].split('_lm')[0].split('_T2')[0].split('_T1')[0].split('_Cl')[0].split('.')[0]
