@@ -23,7 +23,7 @@ class t_crop_volumes(ScriptedLoadableModule):
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "crop_volumes"  # TODO: make this more human readable by adding spaces
+        self.parent.title = "Crop Volumes Auto"  # TODO: make this more human readable by adding spaces
         self.parent.categories = ["Tutorials"]  # TODO: set categories (folders where the module shows up in the module selector)
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
         self.parent.contributors = ["Jeanne Claret (DCBIA lab)"]  # TODO: replace with "Firstname Lastname (Organization)"
@@ -136,7 +136,7 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.SearchPathButtonF.connect("clicked(bool)", partial(self.SearchPath,"Folder_file"))
         self.ui.SearchPathButtonV.connect("clicked(bool)", partial(self.SearchPath,"Volume"))
         self.ui.SearchPathButtonOut.connect("clicked(bool)", partial(self.SearchPath,"Output"))
-        self.ui.chooseType.connect("clicked(bool)", self.SearchPath)
+        #self.ui.chooseType.connect("clicked(bool)", self.SearchPath)
        
 
         # These connections ensure that we update parameter node when scene is closed
@@ -285,8 +285,12 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def SearchPath(self,object : str,_)-> None:
         """
-        Function to connect with the button to select path to the files needed 
+        Function to choose if the path needed is a file or a folder
+        input : Str with the name of the "editLine" we want to fill
+        output : None
         """
+
+        self.ui.applyButton.setEnabled(True)
         if object == "Folder_file":
 
             if self.ui.chooseType.currentIndex == 0:
@@ -309,7 +313,7 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.parent, "Select a scan folder for Output"
             )
             self.ui.editPathOutput.setText(path_folder)
-        self.ValidApplyButton()
+        #self.ValidApplyButton()
 
 
     def ValidApplyButton(self):
@@ -320,14 +324,16 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # extension = extension.lower()
         
         #if self.ui.editPathF.text != "" and self.ui.editPathVolume.text != "" and self.ui.editPathOutput.text != "":
-        self.ui.applyButton.setEnabled(True)
+        #self.ui.applyButton.setEnabled(True)
+
+        pass
             
     
         # else:
         #     self.ui.applyButton.setEnabled(False)
 
 
-    def Search(self,path,*args):
+    def Search(self,path :str,*args):
         """
         Return a dictionary with args element as key and a list of file in path directory finishing by args extension for each key
         Example:
@@ -339,22 +345,55 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 '.nrrd.gz' : ['path/c.nrrd']
             }
         """
-        
+        print("path =",path)
         arguments=[]
-        print("arguments : ",arguments)
+        
         for arg in args:
             if type(arg) == list:
                 arguments.extend(arg)
+                
             else:
                 arguments.append(arg)
-        return {key: [i for i in glob.iglob(os.path.join(path,'**','*'),recursive=True) if i.endswith(key)] for key in arguments}
+                
+        #result = {key: [i for i in glob.iglob(os.path.join(path,'**','*'),recursive=True),if i.endswith(key)] for key in arguments}
 
+        result = {}  # Initialize an empty dictionary
+      
+        for key in arguments:
+
+            files_matching_key = [] # empty list 'files_matching_key' to store the file paths that end with the current 'key'
+
+            if self.ui.chooseType.currentIndex == 1 :
+                # Use 'glob.iglob' to find all file paths ending with the current 'key' in the 'path' directory
+                # and store the generator object returned by 'glob.iglob' in a variable 'files_generator'
+                files_list = glob.iglob(os.path.join(path, '*'),recursive=False)
+                
+                for i in files_list:
+            
+                    if i.endswith(key):
+                        # If the file path ends with the current 'key', append it to the 'files_matching_key' list
+                        files_matching_key.append(i)
+                    
+                    
+
+            else :  # if a file is choosen
+                if path.endswith(key) :
+                    files_matching_key.append(path)
+            
+            # Assign the resulting list to the 'key' in the 'result' dictionary
+            result[key] = files_matching_key
+
+        print("result of search :",result)
+        return result
+       
+
+    
 
     def Crop(self, ROI_Path):
 
         OutputPath = self.ui.editPathOutput.text
         suffix_namefile = self.ui.editSuffix.text
-        #if self.ui.chooseType.currentIndex == 1:
+        
         ScanListe =  self.Search(self.ui.editPathF.text,[".nii.gz",".nrrd.gz",".gipl.gz"])
         print(ScanListe)
         for key,data in ScanListe.items():
@@ -393,12 +432,7 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 except:
                     print("Error for patient: ",patient)
 
-        # else:
-        #     print("Not implemented yet")
-        #     patient_path =  self.ui.editPathF.text
-        #     patient = os.path.basename(patient_path).split('_Scan')[0].split('_scan')[0].split('_Or')[0].split('_OR')[0].split('_MAND')[0].split('_MD')[0].split('_MAX')[0].split('_MX')[0].split('_CB')[0].split('_lm')[0].split('_T2')[0].split('_T1')[0].split('_Cl')[0].split('.')[0]
-        #     #key = os.path.splitext()
-        #     ScanOutPath = OutputPath+"/"+patient+suffix_namefile+key
+        
         
     
         

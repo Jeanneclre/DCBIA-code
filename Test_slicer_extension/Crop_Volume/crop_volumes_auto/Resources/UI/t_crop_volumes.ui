@@ -31,7 +31,7 @@
           <item>
            <widget class="QLineEdit" name="editPathF">
             <property name="text">
-             <string>/home/luciacev/Desktop/jeanne_claret/Data/CP07_Or.gipl.gz</string>
+             <string>/home/Desktop/Jeanne/Data/Input</string>
             </property>
            </widget>
           </item>
@@ -73,7 +73,7 @@
           <item>
            <widget class="QLineEdit" name="editPathVolume">
             <property name="text">
-             <string>/home/luciacev/Desktop/jeanne_claret/Data/Volume/Crop Volume ROI_1.mrk.json</string>
+             <string>/home/Desktop/Jeanne/Data/Volume/Crop Volume ROI_1.mrk.json</string>
             </property>
            </widget>
           </item>
@@ -114,7 +114,7 @@
           <item>
            <widget class="QLineEdit" name="editPathOutput">
             <property name="text">
-             <string>/home/luciacev/Desktop/jeanne_claret/Data/Output</string>
+             <string>/home/Desktop/Jeanne/Data/Output</string>
             </property>
            </widget>
           </item>
