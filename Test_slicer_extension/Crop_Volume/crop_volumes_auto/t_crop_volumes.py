@@ -12,6 +12,8 @@ import SimpleITK as sitk
 import glob
 import numpy as np
 
+import Crop_Volumes_utils as cpu
+
 #
 # t_crop_volumes
 #
@@ -266,8 +268,8 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         """
         Run processing when user clicks "Apply" button.
         """
-        
-        self.Crop(self.ui.editPathVolume.text)
+        cpu.Crop(self.ui.editPathF.text,self.ui.editPathVolume.text,self.ui.editPathOutput.text,self.ui.editSuffix.text)
+
         # with slicer.util.tryWithErrorDisplay("Failed to compute results.", waitCursor=True):
 
         #     # Compute output
@@ -283,7 +285,7 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     
 
-    def SearchPath(self,object : str,_)-> None:
+    def SearchPath(self,object : str,_):
         """
         Function to choose if the path needed is a file or a folder
         input : Str with the name of the "editLine" we want to fill
@@ -296,7 +298,7 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             if self.ui.chooseType.currentIndex == 0:
                 path_folder = qt.QFileDialog.getOpenFileName(self.parent,'Open a file')
 
-            else: 
+            else:   
                 path_folder = qt.QFileDialog.getExistingDirectory(
                     self.parent, "Select a scan folder for Input"
                 )
@@ -313,6 +315,8 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.parent, "Select a scan folder for Output"
             )
             self.ui.editPathOutput.setText(path_folder)
+
+    
         #self.ValidApplyButton()
 
 
@@ -333,113 +337,6 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         #     self.ui.applyButton.setEnabled(False)
 
 
-    def Search(self,path :str,*args):
-        """
-        Return a dictionary with args element as key and a list of file in path directory finishing by args extension for each key
-        Example:
-        args = ('json',['.nii.gz','.nrrd'])
-        return:
-            {
-                'json' : ['path/a.json', 'path/b.json','path/c.json'],
-                '.nii.gz' : ['path/a.nii.gz', 'path/b.nii.gz']
-                '.nrrd.gz' : ['path/c.nrrd']
-            }
-        """
-        print("path =",path)
-        arguments=[]
-        
-        for arg in args:
-            if type(arg) == list:
-                arguments.extend(arg)
-                
-            else:
-                arguments.append(arg)
-                
-        #result = {key: [i for i in glob.iglob(os.path.join(path,'**','*'),recursive=True),if i.endswith(key)] for key in arguments}
-
-        result = {}  # Initialize an empty dictionary
-      
-        for key in arguments:
-
-            files_matching_key = [] # empty list 'files_matching_key' to store the file paths that end with the current 'key'
-
-            if self.ui.chooseType.currentIndex == 1 :
-                # Use 'glob.iglob' to find all file paths ending with the current 'key' in the 'path' directory
-                # and store the generator object returned by 'glob.iglob' in a variable 'files_generator'
-                files_list = glob.iglob(os.path.join(path, '*'),recursive=False)
-                
-                for i in files_list:
-            
-                    if i.endswith(key):
-                        # If the file path ends with the current 'key', append it to the 'files_matching_key' list
-                        files_matching_key.append(i)
-                    
-                    
-
-            else :  # if a file is choosen
-                if path.endswith(key) :
-                    files_matching_key.append(path)
-            
-            # Assign the resulting list to the 'key' in the 'result' dictionary
-            result[key] = files_matching_key
-
-        print("result of search :",result)
-        return result
-       
-
-    
-
-    def Crop(self, ROI_Path):
-
-        OutputPath = self.ui.editPathOutput.text
-        suffix_namefile = self.ui.editSuffix.text
-        
-        ScanListe =  self.Search(self.ui.editPathF.text,[".nii.gz",".nrrd.gz",".gipl.gz"])
-        print(ScanListe)
-        for key,data in ScanListe.items():
-            for patient_path in data:
-                patient = os.path.basename(patient_path).split('_Scan')[0].split('_scan')[0].split('_Or')[0].split('_OR')[0].split('_MAND')[0].split('_MD')[0].split('_MAX')[0].split('_MX')[0].split('_CB')[0].split('_lm')[0].split('_T2')[0].split('_T1')[0].split('_Cl')[0].split('.')[0]
-
-                ScanOutPath = OutputPath+"/"+patient+suffix_namefile+key
-                
-                img = sitk.ReadImage(patient_path)
-                # size = np.array(img.GetSize())
-                # print("size of the image: ",size)
-
-                ## PADDING ##
-                # img = img.sitk.ConstantPadImageFilter()
-                # testPath = OutputPath+"/"+"paddedImage"+key
-                # sitk.WriteImage(img,testPath)
-
-                print("working on patient: ",patient)
-                ROI = json.load(open(ROI_Path))['markups'][0]
-                ROI_Center = np.array(ROI['center'])
-                ROI_Size = np.array(ROI['size'])
-
-                Lower = ROI_Center - ROI_Size / 2
-                Upper = ROI_Center + ROI_Size / 2
-
-                Lower = np.array(img.TransformPhysicalPointToContinuousIndex(Lower)).astype(int)
-                Upper = np.array(img.TransformPhysicalPointToContinuousIndex(Upper)).astype(int)
-
-                # Crop the image
-                crop_image = img[Lower[0]:Upper[0],
-                                Lower[1]:Upper[1],
-                                Lower[2]:Upper[2]]
-                
-                try:
-                    sitk.WriteImage(crop_image,ScanOutPath)
-                except:
-                    print("Error for patient: ",patient)
-
-        
-        
-    
-        
-                    
-                
-
-        
 
     
 #

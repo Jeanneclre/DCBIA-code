@@ -2,7 +2,7 @@ import numpy as np
 import os,json
 import glob
 
-def Search(path,*args):
+def Search(path : str,*args : list ) :
     """
     Return a dictionary with args element as key and a list of file in path directory finishing by args extension for each key
     Example:
@@ -13,6 +13,9 @@ def Search(path,*args):
             '.nii.gz' : ['path/a.nii.gz', 'path/b.nii.gz']
             '.nrrd.gz' : ['path/c.nrrd']
         }
+
+    Input : Path of the folder/file, list of the type (str) of file we need 
+    Output : dictionnary with the key and the associated path
     """
     
     arguments=[]
@@ -32,7 +35,7 @@ def Search(path,*args):
 
         files_matching_key = [] # empty list 'files_matching_key' to store the file paths that end with the current 'key'
 
-        if self.ui.chooseType.currentIndex == 1 :
+        if os.path.isdir(path):
             # Use 'glob.iglob' to find all file paths ending with the current 'key' in the 'path' directory
             # and store the generator object returned by 'glob.iglob' in a variable 'files_generator'
             files_list = glob.iglob(os.path.join(path, '*'),recursive=False)
@@ -52,6 +55,5 @@ def Search(path,*args):
         # Assign the resulting list to the 'key' in the 'result' dictionary
         result[key] = files_matching_key
 
-    print("result of search :",result)
     return result
     

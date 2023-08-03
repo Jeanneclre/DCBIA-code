@@ -1,20 +1,17 @@
 import SimpleITK as sitk
-from Crop_Volumes_utils import search
+from Crop_Volumes_utils.FilesType import Search
 import numpy as np
 import os,json
 #import multiprocessing as mp
 
-def Crop(self, ROI_Path):
+def Crop( InputPath, ROI_Path, OutputPath, suffix_namefile ):
     ''' 
     Function to crop Scan with a Region Of Interest
     Input: Path of the ROI 
     Output: Cropped Scan in the folder OutputPath
     '''
-   
-    OutputPath = self.ui.editPathOutput.text
-    suffix_namefile = self.ui.editSuffix.text
     
-    ScanListe =  self.Search(self.ui.editPathF.text,[".nii.gz",".nrrd.gz",".gipl.gz"])
+    ScanListe =  Search(InputPath,[".nii.gz",".nrrd.gz",".gipl.gz"])
     print(ScanListe)
     for key,data in ScanListe.items():
         for patient_path in data:
