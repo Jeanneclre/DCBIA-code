@@ -2,12 +2,12 @@
 <executable>
   <category>Segmentation.Advanced</category>
   <index>0</index>
-  <title>CrownSegmentationcli</title>
+  <title>CropVolumesAutoCLI</title>
   <description><![CDATA[CLI module that can be built into an extension]]></description>
   <version>0.1.0.</version>
-  <documentation-url>https://github.com/DCBIA-OrthoLab/SlicerDentalModelSeg</documentation-url>
+  <documentation-url>https://github.com/Jeanneclre/DCBIA-code</documentation-url>
   <license/>
-  <contributor>Mathieu Leclercq</contributor>
+  <contributor>Jeanne Claret</contributor>
   <acknowledgements><![CDATA[...]]></acknowledgements>
 
   <parameters>
@@ -17,12 +17,39 @@
     <description><![CDATA[Input/output parameters]]></description>
 
     <string>
-      <name>input</name>
-      <label>input</label>
+      <name>scan_files_path</name>
+      <label>scan_files_path</label>
       <index>0</index>
-      <description>Path for the surface file.</description>
+      <description>Path to the folder or file of the patient scan.</description>
     </string>
 
+    <string>
+      <name>ROI_file</name>
+      <label>ROI_file</label>
+      <index>1</index>
+      <description>File with the data of the Region Of Interest (.json)</description>
+    </string>
+
+     <string>
+      <name>output_path</name>
+      <label>output_path</label>
+      <index>2</index>
+      <description>Path to the Folder to store the cropped scans</description>
+    </string>
+
+      <string>
+      <name>suffix</name>
+      <label>suffix</label>
+      <index>3</index>
+      <description>Suffix to name the output files</description>
+    </string>
+
+     <string>
+      <name>logPath</name>
+      <label>logPath</label>
+      <index>4</index>
+      <description>logPath (for the progress bar?)</description>
+    </string>
 
 
   </parameters>

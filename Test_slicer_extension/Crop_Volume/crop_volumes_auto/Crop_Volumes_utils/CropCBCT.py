@@ -4,16 +4,16 @@ import numpy as np
 import os,json
 #import multiprocessing as mp
 
-def Crop( InputPath, ROI_Path, OutputPath, suffix_namefile ):
+def Crop(ScanList, InputPath, ROI_Path, OutputPath, suffix_namefile ):
     ''' 
     Function to crop Scan with a Region Of Interest
-    Input: Path of the ROI 
+    Input: Dictionnary with the Path of the Files and key, Input Path,
+            Path of the ROI, Output Path, Suffix for the files
+
     Output: Cropped Scan in the folder OutputPath
     '''
     
-    ScanListe =  Search(InputPath,[".nii.gz",".nrrd.gz",".gipl.gz"])
-    print(ScanListe)
-    for key,data in ScanListe.items():
+    for key,data in ScanList.items():
         for patient_path in data:
             patient = os.path.basename(patient_path).split('_Scan')[0].split('_scan')[0].split('_Or')[0].split('_OR')[0].split('_MAND')[0].split('_MD')[0].split('_MAX')[0].split('_MX')[0].split('_CB')[0].split('_lm')[0].split('_T2')[0].split('_T1')[0].split('_Cl')[0].split('.')[0]
 

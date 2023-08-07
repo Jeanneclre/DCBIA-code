@@ -268,8 +268,12 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         """
         Run processing when user clicks "Apply" button.
         """
-        cpu.Crop(self.ui.editPathF.text,self.ui.editPathVolume.text,self.ui.editPathOutput.text,self.ui.editSuffix.text)
+        isValid, dict_patient_files = self.CheckInput()
+        if isValid :
+            cpu.Crop(dict_patient_files,self.ui.editPathF.text,self.ui.editPathVolume.text,self.ui.editPathOutput.text,self.ui.editSuffix.text)
 
+        else :
+            print("Error input")
         # with slicer.util.tryWithErrorDisplay("Failed to compute results.", waitCursor=True):
 
         #     # Compute output
@@ -337,7 +341,53 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         #     self.ui.applyButton.setEnabled(False)
 
 
+    def CheckInput(self):
+        """
+        function to check all input and put a pop "error" window 
+        Input: /
+        Output: Boolean , Dictionnary with the key and path of the files 
+        """
+        warning_text = ""
+        if self.ui.editPathF.text=="":
+            if self.ui.chooseType.currentIndex == 1 : #Folder option
+                warning_text = warning_text + "Enter a Folder in input" + "\n"
+            else:
+                warning_text = warning_text + "Enter a File in input (.nii.gz,.nrrd.gz,.gipl.gz)" + "\n"
+    
+        if self.ui.editPathVolume.text=="":
+            
+            warning_text = warning_text + "Choose a ROI file (.json)" + "\n"
+            
+        else :
+            self.list_patient=cpu.Search(self.ui.editPathF.text,".nii.gz",".nrrd.gz",".gipl.gz") #dictionnary with all path of file (working on folder or file)
+            
+            for key,data in self.list_patient.items() :
+                isfile = 0
+                if len(self.list_patient[key])!=0 :
+                    isfile = 1 # There are good types of files in the folder
 
+            if self.ui.chooseType.currentIndex==1 and isfile ==0 :
+                warning_text = warning_text + "Folder empty or wrong type of patient files " + "\n"
+                warning_text = warning_text + "File authorized : .nii.gz, .nrrd.gz, .gipl.gz" + "\n"
+
+            elif self.ui.chooseType.currentIndex==0 and isfile ==0 :
+                warning_text = warning_text + "Wrong type of patient file  detected" + "\n"
+                warning_text = warning_text + "File authorized : .nii.gz, .nrrd.gz, .gipl.gz" + "\n"
+
+
+        if self.ui.editPathOutput.text=="":
+            
+            warning_text = warning_text + "Enter the output Folder" + "\n"
+           
+    
+        if warning_text=="":
+            result = True
+            return result, self.list_patient
+
+        else :
+            qt.QMessageBox.warning(self.parent, "Warning", warning_text)
+            result = False
+            return result, self.list_patient
     
 #
 # t_crop_volumesLogic
