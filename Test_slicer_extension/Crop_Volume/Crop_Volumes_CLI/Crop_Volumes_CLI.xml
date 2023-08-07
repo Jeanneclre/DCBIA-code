@@ -24,8 +24,8 @@
     </string>
 
     <string>
-      <name>ROI_file</name>
-      <label>ROI_file</label>
+      <name>path_ROI_file</name>
+      <label>path_ROI_file</label>
       <index>1</index>
       <description>File with the data of the Region Of Interest (.json)</description>
     </string>

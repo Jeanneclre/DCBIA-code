@@ -2,7 +2,8 @@ import numpy as np
 import os,json
 import glob
 
-def Search(path : str,*args : list ) :
+
+def Search(path : str,*args ) :
     """
     Return a dictionary with args element as key and a list of file in path directory finishing by args extension for each key
     Example:
@@ -28,7 +29,7 @@ def Search(path : str,*args : list ) :
             arguments.append(arg)
             
     #result = {key: [i for i in glob.iglob(os.path.join(path,'**','*'),recursive=True),if i.endswith(key)] for key in arguments}
-
+    
     result = {}  # Initialize an empty dictionary
     
     for key in arguments:
@@ -38,6 +39,7 @@ def Search(path : str,*args : list ) :
         if os.path.isdir(path):
             # Use 'glob.iglob' to find all file paths ending with the current 'key' in the 'path' directory
             # and store the generator object returned by 'glob.iglob' in a variable 'files_generator'
+            
             files_list = glob.iglob(os.path.join(path, '*'),recursive=False)
             
             for i in files_list:

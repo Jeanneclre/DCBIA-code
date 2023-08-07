@@ -2,17 +2,20 @@ import logging
 import os,json
 
 import vtk
+import SimpleITK as sitk
 
 import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
+
 import qt
-from functools import partial
-import SimpleITK as sitk
+
 import glob
 import numpy as np
+from functools import partial
 
-import Crop_Volumes_utils as cpu
+from pathlib import Path
+#import Crop_Volumes_CLI.Crop_Volumes_utils as cpu
 
 #
 # t_crop_volumes
@@ -157,6 +160,8 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
 
+        self.logPath = os.path.join(slicer.util.tempDirectory(), 'process.log')
+
     def cleanup(self):
         """
         Called when the application closes and the module widget is destroyed.
@@ -268,12 +273,31 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         """
         Run processing when user clicks "Apply" button.
         """
-        isValid, dict_patient_files = self.CheckInput()
+        print('dans onapplybutton')
+        isValid = self.CheckInput()
         if isValid :
-            cpu.Crop(dict_patient_files,self.ui.editPathF.text,self.ui.editPathVolume.text,self.ui.editPathOutput.text,self.ui.editSuffix.text)
+        #     cpu.Crop(dict_patient_files,self.ui.editPathF.text,self.ui.editPathVolume.text,self.ui.editPathOutput.text,self.ui.editSuffix.text)
 
-        else :
-            print("Error input")
+        # else :
+        #     print("Error input")
+
+
+            self.logic = t_crop_volumesLogic(self.ui.editPathF.text,
+                                            self.ui.editPathVolume.text,
+                                            self.ui.editPathOutput.text, 
+                                            self.ui.editSuffix.text,
+                                            self.logPath)
+
+
+            self.logic.process()
+            print("sous logic.process ds OnApplyButton")
+        #self.processObserver = self.logic.cliNode.AddObserver('ModifiedEvent',self.onProcessUpdate)
+        ## A VOIR l'utilite ##
+        #self.addObserver(self.logic.cliNode,vtk.vtkCommand.ModifiedEvent,self.onProcessUpdate)
+        #self.onProcessStarted()
+            
+
+
         # with slicer.util.tryWithErrorDisplay("Failed to compute results.", waitCursor=True):
 
         #     # Compute output
@@ -341,6 +365,64 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         #     self.ui.applyButton.setEnabled(False)
 
 
+    def Search(self,path : str,*args ) :
+        """
+        Return a dictionary with args element as key and a list of file in path directory finishing by args extension for each key
+        Example:
+        args = ('json',['.nii.gz','.nrrd'])
+        return:
+            {
+                'json' : ['path/a.json', 'path/b.json','path/c.json'],
+                '.nii.gz' : ['path/a.nii.gz', 'path/b.nii.gz']
+                '.nrrd.gz' : ['path/c.nrrd']
+            }
+
+        Input : Path of the folder/file, list of the type (str) of file we need 
+        Output : dictionnary with the key and the associated path
+        """
+        
+        arguments=[]
+        
+        for arg in args:
+            if type(arg) == list:
+                arguments.extend(arg)
+                
+            else:
+                arguments.append(arg)
+                
+        #result = {key: [i for i in glob.iglob(os.path.join(path,'**','*'),recursive=True),if i.endswith(key)] for key in arguments}
+       
+        result = {}  # Initialize an empty dictionary
+        
+        for key in arguments:
+
+            files_matching_key = [] # empty list 'files_matching_key' to store the file paths that end with the current 'key'
+
+            true_path = str(path)
+            if os.path.isdir(true_path):
+                # Use 'glob.iglob' to find all file paths ending with the current 'key' in the 'path' directory
+                # and store the generator object returned by 'glob.iglob' in a variable 'files_generator'
+                
+                files_list = glob.iglob(os.path.join(true_path, '*'),recursive=False)
+                
+                for i in files_list:
+            
+                    if i.endswith(key):
+                        # If the file path ends with the current 'key', append it to the 'files_matching_key' list
+                        files_matching_key.append(i)
+                    
+                    
+
+            else :  # if a file is choosen
+                if true_path.endswith(key) :
+                    files_matching_key.append(path)
+            
+            # Assign the resulting list to the 'key' in the 'result' dictionary
+            result[key] = files_matching_key
+       
+        return result
+        
+
     def CheckInput(self):
         """
         function to check all input and put a pop "error" window 
@@ -359,10 +441,11 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             warning_text = warning_text + "Choose a ROI file (.json)" + "\n"
             
         else :
-            self.list_patient=cpu.Search(self.ui.editPathF.text,".nii.gz",".nrrd.gz",".gipl.gz") #dictionnary with all path of file (working on folder or file)
-            
+            self.list_patient=self.Search(self.ui.editPathF.text,".nii.gz",".nrrd.gz",".gipl.gz") #dictionnary with all path of file (working on folder or file)
+
+            isfile = 0
             for key,data in self.list_patient.items() :
-                isfile = 0
+                
                 if len(self.list_patient[key])!=0 :
                     isfile = 1 # There are good types of files in the folder
 
@@ -382,13 +465,12 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
         if warning_text=="":
             result = True
-            return result, self.list_patient
+            return result
 
         else :
             qt.QMessageBox.warning(self.parent, "Warning", warning_text)
             result = False
-            return result, self.list_patient
-    
+            return result
 #
 # t_crop_volumesLogic
 #
@@ -403,11 +485,19 @@ class t_crop_volumesLogic(ScriptedLoadableModuleLogic):
     https://github.com/Slicer/Slicer/blob/main/Base/Python/slicer/ScriptedLoadableModule.py
     """
 
-    def __init__(self):
+    def __init__(self,scan_files_path=None,path_ROI_file=None,output_path=None,suffix=None,logPath=None):
         """
         Called when the logic class is instantiated. Can be used for initializing member variables.
         """
         ScriptedLoadableModuleLogic.__init__(self)
+        self.scan_files_path = scan_files_path
+        self.path_ROI_file = path_ROI_file
+        self.output_path = output_path
+        self.suffix = suffix
+        self.logPath = logPath
+
+        self.cliNode = None
+        self.installCliNode = None
 
     def setDefaultParameters(self, parameterNode):
         """
@@ -418,37 +508,58 @@ class t_crop_volumesLogic(ScriptedLoadableModuleLogic):
         if not parameterNode.GetParameter("Invert"):
             parameterNode.SetParameter("Invert", "false")
 
-    def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
+
+    def process(self):
         """
         Run the processing algorithm.
-        Can be used without GUI widget.
-        :param inputVolume: volume to be thresholded
-        :param outputVolume: thresholding result
-        :param imageThreshold: values above/below this threshold will be set to 0
-        :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
-        :param showResult: show output volume in slice viewers
         """
+        parameters = {}
+        
+        
+        parameters ["scan_files_path"] = self.scan_files_path
+        parameters ["path_ROI_file"] = self.path_ROI_file
+        parameters ["output_path"] = self.output_path
+        parameters ["suffix"] = self.suffix
+        parameters ["logPath"] = self.logPath
+        
+        print("parameters : ", parameters)
+        flybyProcess = slicer.modules.crop_volumes_cli
+        print("flybyprocess", flybyProcess)
+        self.cliNode = slicer.cli.run(flybyProcess,None, parameters)  
+        print("sous cliNode")
+        return flybyProcess
 
-        if not inputVolume or not outputVolume:
-            raise ValueError("Input or output volume is invalid")
+    # def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
+    #     """
+    #     Run the processing algorithm.
+    #     Can be used without GUI widget.
+    #     :param inputVolume: volume to be thresholded
+    #     :param outputVolume: thresholding result
+    #     :param imageThreshold: values above/below this threshold will be set to 0
+    #     :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
+    #     :param showResult: show output volume in slice viewers
+    #     """
 
-        import time
-        startTime = time.time()
-        logging.info('Processing started')
+    #     if not inputVolume or not outputVolume:
+    #         raise ValueError("Input or output volume is invalid")
 
-        # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
-        cliParams = {
-            'InputVolume': inputVolume.GetID(),
-            'OutputVolume': outputVolume.GetID(),
-            'ThresholdValue': imageThreshold,
-            'ThresholdType': 'Above' if invert else 'Below'
-        }
-        cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
-        # We don't need the CLI module node anymore, remove it to not clutter the scene with it
-        slicer.mrmlScene.RemoveNode(cliNode)
+    #     import time
+    #     startTime = time.time()
+    #     logging.info('Processing started')
 
-        stopTime = time.time()
-        logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
+    #     # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
+    #     cliParams = {
+    #         'InputVolume': inputVolume.GetID(),
+    #         'OutputVolume': outputVolume.GetID(),
+    #         'ThresholdValue': imageThreshold,
+    #         'ThresholdType': 'Above' if invert else 'Below'
+    #     }
+    #     cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
+    #     # We don't need the CLI module node anymore, remove it to not clutter the scene with it
+    #     slicer.mrmlScene.RemoveNode(cliNode)
+
+    #     stopTime = time.time()
+    #     logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
 
 
 #
