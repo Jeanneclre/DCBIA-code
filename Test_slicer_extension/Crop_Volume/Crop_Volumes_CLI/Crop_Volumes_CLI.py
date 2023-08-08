@@ -68,7 +68,7 @@ if __name__ == "__main__":
     parser.add_argument('path_ROI_file',type=str)
     parser.add_argument("output_path",type=str)
     parser.add_argument('suffix',type=str)
-    parser.add_argument('logPath',type=str)
+   # parser.add_argument('logPath',type=str)
 
 
     args = parser.parse_args()

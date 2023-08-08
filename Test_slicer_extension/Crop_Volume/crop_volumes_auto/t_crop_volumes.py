@@ -141,6 +141,7 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.SearchPathButtonF.connect("clicked(bool)", partial(self.SearchPath,"Folder_file"))
         self.ui.SearchPathButtonV.connect("clicked(bool)", partial(self.SearchPath,"Volume"))
         self.ui.SearchPathButtonOut.connect("clicked(bool)", partial(self.SearchPath,"Output"))
+        self.ui.TestFiles.connect("clicked(bool)",self.Autofill)
         #self.ui.chooseType.connect("clicked(bool)", self.SearchPath)
        
 
@@ -161,6 +162,12 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.initializeParameterNode()
 
         self.logPath = os.path.join(slicer.util.tempDirectory(), 'process.log')
+
+    def Autofill(self):
+        self.ui.editPathF.setText("/home/luciacev/Desktop/Jeanne/Data/Input")
+        self.ui.editPathVolume.setText("/home/luciacev/Desktop/Jeanne/Data/Volume/Crop_Volume_ROI_1.mrk.json")
+        self.ui.editPathOutput.setText("/home/luciacev/Desktop/Jeanne/Data/Output")
+        self.ui.chooseType.setCurrentIndex(1)
 
     def cleanup(self):
         """
@@ -285,8 +292,8 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.logic = t_crop_volumesLogic(self.ui.editPathF.text,
                                             self.ui.editPathVolume.text,
                                             self.ui.editPathOutput.text, 
-                                            self.ui.editSuffix.text,
-                                            self.logPath)
+                                            self.ui.editSuffix.text)
+                                            # self.logPath)
 
 
             self.logic.process()
@@ -494,7 +501,7 @@ class t_crop_volumesLogic(ScriptedLoadableModuleLogic):
         self.path_ROI_file = path_ROI_file
         self.output_path = output_path
         self.suffix = suffix
-        self.logPath = logPath
+        # self.logPath = logPath
 
         self.cliNode = None
         self.installCliNode = None
@@ -520,7 +527,7 @@ class t_crop_volumesLogic(ScriptedLoadableModuleLogic):
         parameters ["path_ROI_file"] = self.path_ROI_file
         parameters ["output_path"] = self.output_path
         parameters ["suffix"] = self.suffix
-        parameters ["logPath"] = self.logPath
+        # parameters ["logPath"] = self.logPath
         
         print("parameters : ", parameters)
         flybyProcess = slicer.modules.crop_volumes_cli
