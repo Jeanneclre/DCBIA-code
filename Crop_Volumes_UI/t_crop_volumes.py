@@ -9,12 +9,14 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 
 import qt
+from qt import QFileDialog, QMessageBox
 
 import glob
 import numpy as np
 from functools import partial
 
 from pathlib import Path
+import time
 #import Crop_Volumes_CLI.Crop_Volumes_utils as cpu
 
 #
@@ -156,12 +158,23 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # Buttons
         self.ui.applyButton.connect('clicked(bool)', self.onApplyButton)
 
-        
-
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
 
-        self.logPath = os.path.join(slicer.util.tempDirectory(), 'process.log')
+        # Progress Bar
+        self.log_path = os.path.join(slicer.util.tempDirectory(), 'process.log')
+        self.time_log = 0
+        self.cliNode = None
+        self.installCliNode = None  
+        self.progress=0
+
+        self.ui.progressBar.setVisible(False)
+        self.ui.progressBar.setRange(0,100)
+        self.ui.progressBar.setTextVisible(True)
+        self.ui.label_4.setVisible(False)
+        
+
+       
 
     def Autofill(self):
         self.ui.editPathF.setText("/home/luciacev/Desktop/Jeanne/Data/Input")
@@ -280,7 +293,6 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         """
         Run processing when user clicks "Apply" button.
         """
-        print('dans onapplybutton')
         isValid = self.CheckInput()
         if isValid :
         #     cpu.Crop(dict_patient_files,self.ui.editPathF.text,self.ui.editPathVolume.text,self.ui.editPathOutput.text,self.ui.editSuffix.text)
@@ -292,13 +304,15 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.logic = t_crop_volumesLogic(self.ui.editPathF.text,
                                             self.ui.editPathVolume.text,
                                             self.ui.editPathOutput.text, 
-                                            self.ui.editSuffix.text)
-                                            # self.logPath)
+                                            self.ui.editSuffix.text,
+                                            self.log_path)
 
 
             self.logic.process()
-            print("sous logic.process ds OnApplyButton")
-        #self.processObserver = self.logic.cliNode.AddObserver('ModifiedEvent',self.onProcessUpdate)
+            self.addObserver(self.logic.cliNode,vtk.vtkCommand.ModifiedEvent,self.onProcessUpdate)
+            self.onProcessStarted()
+            
+
         ## A VOIR l'utilite ##
         #self.addObserver(self.logic.cliNode,vtk.vtkCommand.ModifiedEvent,self.onProcessUpdate)
         #self.onProcessStarted()
@@ -318,7 +332,87 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         #                            self.ui.imageThresholdSliderWidget.value, not self.ui.invertOutputCheckBox.checked, showResult=False)
     
 
+    def onProcessStarted(self):    
+        self.nbFiles = 0
+        for key,data in self.list_patient.items() :
+            self.nbFiles += len(self.list_patient[key]) 
+
+        self.ui.progressBar.setValue(0)
+        self.progress = 0
+        self.ui.label_4.setVisible(True)
+        self.ui.label_4.setText("Number of processed files : "+str(self.progress)+"/"+str(self.nbFiles))
+        self.ui.progressBar.setVisible(True)
+        self.ui.progressBar.setEnabled(True)
+        self.ui.progressBar.setHidden(False)
+        self.ui.progressBar.setTextVisible(True)
     
+
+    def onProcessUpdate(self,caller,event):
+    # check log file
+        print("self.log_path", self.log_path)
+        print("test logPath :",os.path.isfile(self.log_path) )
+        if os.path.isfile(self.log_path):
+            print("1st condition of onProcessUpdate")
+            time = os.path.getmtime(self.log_path)
+            if time != self.time_log and self.progress < self.nbFiles:
+                print("condition time in")
+                # if progress was made
+                self.time_log = time
+                self.progress += 1
+                progressbar_value = (self.progress-1) /self.nbFiles * 100
+                if progressbar_value < 100 :
+                    self.ui.progressBar.setValue(progressbar_value)
+                    self.ui.progressBar.setFormat(str(progressbar_value)+"%")
+                else:
+                    self.ui.progressBar.setValue(99)
+                    self.ui.progressBar.setFormat("99%")
+                self.ui.label_4.setText("Number of processed files : "+str(self.progress-1)+"/"+str(self.nbFiles))
+                print(f"self.progress : {self.progress}")
+                
+                
+
+        if self.logic.cliNode.GetStatus() & self.logic.cliNode.Completed:
+            # process complete
+            self.ui.applyButton.setEnabled(True)
+            self.ui.label_4.setText("Number of processed files : "+str(self.progress)+"/"+str(self.nbFiles))
+            print(f"self.progress : {self.progress}")
+
+            if self.logic.cliNode.GetStatus() & self.logic.cliNode.ErrorsMask:
+                # error
+                errorText = self.logic.cliNode.GetErrorText()
+                print("CLI execution failed: \n \n" + errorText)
+                msg = qt.QMessageBox()
+                msg.setText(f'There was an error during the process:\n \n {errorText} ')
+                msg.setWindowTitle("Error")
+                msg.exec_()
+
+            else:
+                # success
+                print('PROCESS DONE.')
+                print(self.logic.cliNode.GetOutputText())
+                self.ui.progressBar.setValue(100)
+                self.ui.progressBar.setFormat("100%")
+
+                #qt.QMessageBox.information(self.parent,"Matrix applied with sucess")
+                msg = qt.QMessageBox()
+                msg.setIcon(qt.QMessageBox.Information)
+            
+                # setting message for Message Box
+                msg.setText("Scan(s) cropped with success")
+                
+                # setting Message box window title
+                msg.setWindowTitle("End of Process")
+                
+                # declaring buttons on Message Box
+                msg.setStandardButtons(qt.QMessageBox.Ok)
+                msg.exec_()
+
+                self.ui.progressBar.setVisible(False)
+                self.ui.label_4.setVisible(False)
+                self.ui.editPathF.setText("")
+                self.ui.editPathVolume.setText("")
+                self.ui.editPathOutput.setText("")
+                self.ui.chooseType.setCurrentIndex(0)
 
     def SearchPath(self,object : str,_):
         """
@@ -501,7 +595,7 @@ class t_crop_volumesLogic(ScriptedLoadableModuleLogic):
         self.path_ROI_file = path_ROI_file
         self.output_path = output_path
         self.suffix = suffix
-        # self.logPath = logPath
+        self.logPath = logPath
 
         self.cliNode = None
         self.installCliNode = None
@@ -522,18 +616,15 @@ class t_crop_volumesLogic(ScriptedLoadableModuleLogic):
         """
         parameters = {}
         
-        
         parameters ["scan_files_path"] = self.scan_files_path
         parameters ["path_ROI_file"] = self.path_ROI_file
         parameters ["output_path"] = self.output_path
         parameters ["suffix"] = self.suffix
-        # parameters ["logPath"] = self.logPath
+        parameters ["logPath"] = self.logPath
         
-        print("parameters : ", parameters)
         flybyProcess = slicer.modules.crop_volumes_cli
-        print("flybyprocess", flybyProcess)
         self.cliNode = slicer.cli.run(flybyProcess,None, parameters)  
-        print("sous cliNode")
+        
         return flybyProcess
 
     # def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
@@ -573,7 +664,7 @@ class t_crop_volumesLogic(ScriptedLoadableModuleLogic):
 # t_crop_volumesTest
 #
 
-class t_crop_volumesTest(ScriptedLoadableModuleTest):
+class t_crop_volumesTest(ScriptedLoadableModuleTest):       
     """
     This is the test case for your scripted module.
     Uses ScriptedLoadableModuleTest base class, available at:

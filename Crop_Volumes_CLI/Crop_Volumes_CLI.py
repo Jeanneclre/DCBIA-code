@@ -9,14 +9,26 @@ import os,json
 
 
 
-def main(args):
+def main(args)-> None:
+    """
+    Crop a Region of Interest on files with the extension .nii.gz .nrrd.gz .gipl.gz
+    Input:  scan_files_path,
+            path_ROI_file,
+            output_path,
+            suffix,
+            logPath # For the progress bar in UI
 
+            
+    """
     path_input = args.scan_files_path
     ROI_Path = args.path_ROI_file
     OutputPath = args.output_path
     suffix_namefile = args.suffix
     
-    print("in main of cli")
+    with open(args.logPath,'w') as log_f:
+        # clear log file
+        log_f.truncate(0)
+    index =0
     ScanList = Search(path_input, ".nii.gz",".nrrd.gz",".gipl.gz")
     for key,data in ScanList.items():
         
@@ -55,12 +67,14 @@ def main(args):
             except:
                 print("Error for patient: ",patient)
 
+            with open(args.logPath,'r+') as log_f :
+                    log_f.write(str(index))
 
+            index+=1
 
 
 if __name__ == "__main__":
     
-    print("dans le cli")
     parser = argparse.ArgumentParser()
 
 
@@ -68,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument('path_ROI_file',type=str)
     parser.add_argument("output_path",type=str)
     parser.add_argument('suffix',type=str)
-   # parser.add_argument('logPath',type=str)
+    parser.add_argument('logPath',type=str)
 
 
     args = parser.parse_args()
