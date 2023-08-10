@@ -40,8 +40,7 @@ def Search(path : str,*args ) :
             # Use 'glob.iglob' to find all file paths ending with the current 'key' in the 'path' directory
             # and store the generator object returned by 'glob.iglob' in a variable 'files_generator'
             
-            files_list = glob.iglob(os.path.join(path, '*'),recursive=False)
-            
+            files_list = glob.iglob(os.path.join(path,'**', '*'),recursive=True)
             for i in files_list:
         
                 if i.endswith(key):

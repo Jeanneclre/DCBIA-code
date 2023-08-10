@@ -117,6 +117,8 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.logic = None
         self._parameterNode = None
         self._updatingGUIFromParameterNode = False
+        
+        self.startTime = time.time()
 
     def setup(self):
         """
@@ -172,6 +174,7 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.progressBar.setRange(0,100)
         self.ui.progressBar.setTextVisible(True)
         self.ui.label_4.setVisible(False)
+        self.ui.label_time.setVisible(False)
         
 
        
@@ -349,17 +352,15 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onProcessUpdate(self,caller,event):
     # check log file
-        print("self.log_path", self.log_path)
-        print("test logPath :",os.path.isfile(self.log_path) )
         if os.path.isfile(self.log_path):
-            print("1st condition of onProcessUpdate")
-            time = os.path.getmtime(self.log_path)
-            if time != self.time_log and self.progress < self.nbFiles:
-                print("condition time in")
+            
+            time_progress = os.path.getmtime(self.log_path)
+            if time_progress != self.time_log and self.progress < self.nbFiles:
                 # if progress was made
-                self.time_log = time
+                self.time_log = time_progress
                 self.progress += 1
-                progressbar_value = (self.progress-1) /self.nbFiles * 100
+                progressbar_value = round((self.progress-1) /self.nbFiles * 100,2)
+                
                 if progressbar_value < 100 :
                     self.ui.progressBar.setValue(progressbar_value)
                     self.ui.progressBar.setFormat(str(progressbar_value)+"%")
@@ -367,7 +368,6 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                     self.ui.progressBar.setValue(99)
                     self.ui.progressBar.setFormat("99%")
                 self.ui.label_4.setText("Number of processed files : "+str(self.progress-1)+"/"+str(self.nbFiles))
-                print(f"self.progress : {self.progress}")
                 
                 
 
@@ -413,6 +413,11 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.ui.editPathVolume.setText("")
                 self.ui.editPathOutput.setText("")
                 self.ui.chooseType.setCurrentIndex(0)
+
+
+                processTime = round(time.time() - self.startTime,3)
+                self.ui.label_time.setVisible(True)
+                self.ui.label_time.setText("done in "+ str(processTime)+ "s")
 
     def SearchPath(self,object : str,_):
         """
@@ -504,8 +509,7 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 # Use 'glob.iglob' to find all file paths ending with the current 'key' in the 'path' directory
                 # and store the generator object returned by 'glob.iglob' in a variable 'files_generator'
                 
-                files_list = glob.iglob(os.path.join(true_path, '*'),recursive=False)
-                
+                files_list = glob.iglob(os.path.join(true_path,'**', '*'),recursive=True)
                 for i in files_list:
             
                     if i.endswith(key):
@@ -543,7 +547,7 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             
         else :
             self.list_patient=self.Search(self.ui.editPathF.text,".nii.gz",".nrrd.gz",".gipl.gz") #dictionnary with all path of file (working on folder or file)
-
+           
             isfile = 0
             for key,data in self.list_patient.items() :
                 

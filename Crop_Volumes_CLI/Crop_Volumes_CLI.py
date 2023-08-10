@@ -34,8 +34,8 @@ def main(args)-> None:
         
         for patient_path in data:
             patient = os.path.basename(patient_path).split('_Scan')[0].split('_scan')[0].split('_Or')[0].split('_OR')[0].split('_MAND')[0].split('_MD')[0].split('_MAX')[0].split('_MX')[0].split('_CB')[0].split('_lm')[0].split('_T2')[0].split('_T1')[0].split('_Cl')[0].split('.')[0]
-
-            ScanOutPath = OutputPath+"/"+patient+suffix_namefile+key
+            
+            #ScanOutPath = OutputPath+"/"+patient+suffix_namefile+key
             
             img = sitk.ReadImage(patient_path)
             # size = np.array(img.GetSize())
@@ -46,7 +46,7 @@ def main(args)-> None:
             # testPath = OutputPath+"/"+"paddedImage"+key
             # sitk.WriteImage(img,testPath)
 
-            print("working on patient: ",patient)
+            
             ROI = json.load(open(ROI_Path))['markups'][0]
             ROI_Center = np.array(ROI['center'])
             ROI_Size = np.array(ROI['size'])
@@ -62,7 +62,16 @@ def main(args)-> None:
                             Lower[1]:Upper[1],
                             Lower[2]:Upper[2]]
             
+            # Create the output path
+            relative_path = os.path.relpath(patient_path,path_input)
+            filename = os.path.basename(patient_path).split('.')[0]
+            filename = filename + "_"+ suffix_namefile + key
+    
+            ScanOutPath = os.path.join(OutputPath,relative_path).replace(os.path.basename(relative_path),filename)
+            os.makedirs(os.path.dirname(ScanOutPath), exist_ok=True)
+            
             try:
+                
                 sitk.WriteImage(crop_image,ScanOutPath)
             except:
                 print("Error for patient: ",patient)
