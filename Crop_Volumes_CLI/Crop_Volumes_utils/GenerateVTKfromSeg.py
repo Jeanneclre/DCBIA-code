@@ -70,10 +70,13 @@ def convertNiftiToVTK(input_path, output_path ) -> None:
         # Save the final VTK model
         Write(model, output_filename)
 
-def Write(vtkdata, output_name):
-	outfilename = output_name
-	print("Writting:", outfilename)
-	polydatawriter = vtk.vtkPolyDataWriter()
-	polydatawriter.SetFileName(outfilename)
-	polydatawriter.SetInputData(vtkdata)
-	polydatawriter.Write()
+def Write(vtkdata, output_name)-> None:
+        """
+        Function to write VTK files
+        Input : vtk data and path of the output
+        """
+        outfilename = output_name
+        polydatawriter = vtk.vtkPolyDataWriter()
+        polydatawriter.SetFileName(outfilename)
+        polydatawriter.SetInputData(vtkdata)
+        polydatawriter.Write()

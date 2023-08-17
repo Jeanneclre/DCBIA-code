@@ -86,6 +86,7 @@ def main(args)-> None:
                     convertNiftiToVTK(ScanOutPath,VTKOutPath)
                 except :
                     pass
+                
             index+=1
 
 
