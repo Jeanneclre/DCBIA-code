@@ -6,6 +6,8 @@ import os,json
 
 def Crop(ScanList, InputPath, ROI_Path, OutputPath, suffix_namefile ):
     ''' 
+    !!! UNUSED  !!! This code is directly in the CLI of the extension
+
     Function to crop Scan with a Region Of Interest
     Input: Dictionnary with the Path of the Files and key, Input Path,
             Path of the ROI, Output Path, Suffix for the files

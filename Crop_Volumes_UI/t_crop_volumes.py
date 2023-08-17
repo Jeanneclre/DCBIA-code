@@ -314,7 +314,7 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.logic.process()
             self.addObserver(self.logic.cliNode,vtk.vtkCommand.ModifiedEvent,self.onProcessUpdate)
             self.onProcessStarted()
-            
+    
 
         ## A VOIR l'utilite ##
         #self.addObserver(self.logic.cliNode,vtk.vtkCommand.ModifiedEvent,self.onProcessUpdate)
@@ -453,22 +453,6 @@ class t_crop_volumesWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
         #self.ValidApplyButton()
 
-
-    def ValidApplyButton(self):
-        """
-        Function to check if the apply button can be used
-        """
-        # fname, extension = os.path.splitext(os.path.basename(path))
-        # extension = extension.lower()
-        
-        #if self.ui.editPathF.text != "" and self.ui.editPathVolume.text != "" and self.ui.editPathOutput.text != "":
-        #self.ui.applyButton.setEnabled(True)
-
-        pass
-            
-    
-        # else:
-        #     self.ui.applyButton.setEnabled(False)
 
 
     def Search(self,path : str,*args ) :

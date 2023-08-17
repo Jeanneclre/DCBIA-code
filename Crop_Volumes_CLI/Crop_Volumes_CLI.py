@@ -3,6 +3,7 @@
 import argparse
 import SimpleITK as sitk
 from Crop_Volumes_utils.FilesType import Search
+from Crop_Volumes_utils.GenerateVTKfromSeg import convertNiftiToVTK
 import numpy as np
 import os,json
 
@@ -35,18 +36,13 @@ def main(args)-> None:
         for patient_path in data:
             patient = os.path.basename(patient_path).split('_Scan')[0].split('_scan')[0].split('_Or')[0].split('_OR')[0].split('_MAND')[0].split('_MD')[0].split('_MAX')[0].split('_MX')[0].split('_CB')[0].split('_lm')[0].split('_T2')[0].split('_T1')[0].split('_Cl')[0].split('.')[0]
             
-            #ScanOutPath = OutputPath+"/"+patient+suffix_namefile+key
-            
             img = sitk.ReadImage(patient_path)
-            # size = np.array(img.GetSize())
-            # print("size of the image: ",size)
 
             ## PADDING ##
             # img = img.sitk.ConstantPadImageFilter()
             # testPath = OutputPath+"/"+"paddedImage"+key
             # sitk.WriteImage(img,testPath)
 
-            
             ROI = json.load(open(ROI_Path))['markups'][0]
             ROI_Center = np.array(ROI['center'])
             ROI_Size = np.array(ROI['size'])
@@ -63,22 +59,33 @@ def main(args)-> None:
                             Lower[2]:Upper[2]]
             
             # Create the output path
-            relative_path = os.path.relpath(patient_path,path_input)
+            # relative_path = all folder to get to the file we want in the input
+            relative_path = os.path.relpath(patient_path,path_input) 
             filename = os.path.basename(patient_path).split('.')[0]
             filename = filename + "_"+ suffix_namefile + key
-    
+
+            vtk_filename = filename + "_" + suffix_namefile + "_vtk.vtk"
             ScanOutPath = os.path.join(OutputPath,relative_path).replace(os.path.basename(relative_path),filename)
+
+            VTKOutPath = os.path.join(OutputPath,relative_path).replace(os.path.basename(relative_path),vtk_filename)
+
             os.makedirs(os.path.dirname(ScanOutPath), exist_ok=True)
             
             try:
                 
                 sitk.WriteImage(crop_image,ScanOutPath)
+                
             except:
                 print("Error for patient: ",patient)
 
             with open(args.logPath,'r+') as log_f :
                     log_f.write(str(index))
-
+            
+            if "seg" in ScanOutPath.lower(): 
+                try :
+                    convertNiftiToVTK(ScanOutPath,VTKOutPath)
+                except :
+                    pass
             index+=1
 
 
