@@ -16,7 +16,7 @@ LABEL_COLORS = {
 def convertNiftiToVTK(input_path, output_path ) -> None:
         """
         function to generate VTK files from nifti segmentation (labelmap).
-        input : path of your segmentation file, path of your futur vtk file
+        Input : path of your segmentation file, path of your futur vtk file
         """
         input_filename = input_path
         output_filename = output_path
@@ -33,9 +33,11 @@ def convertNiftiToVTK(input_path, output_path ) -> None:
 
         label = np.max(img_arr)
        
+        paddedImage_filename = padding(img)
+
         # Read the original Nifti image
         surf = vtk.vtkNIFTIImageReader()
-        surf.SetFileName(input_filename)
+        surf.SetFileName(paddedImage_filename)
         surf.Update()
         
         # Apply filter to create an isosurface from the input image
@@ -67,8 +69,26 @@ def convertNiftiToVTK(input_path, output_path ) -> None:
 
         model.GetCellData().SetScalars(color)
 
+        os.remove(paddedImage_filename)
         # Save the final VTK model
         Write(model, output_filename)
+
+def padding(input_image) :
+    """
+    Function to padd the model and to close it
+    Input: Image
+    Output: File Name of the padded Image
+    """
+    # Size of the padding 
+    # Add 50 pixels around each dimension X,Y and 10 around Z
+    padding_size = [50, 50, 10] 
+   
+    padded_image = sitk.ConstantPad(input_image, padding_size, [0]*input_image.GetDimension())
+    # Save the image
+    filename = "image_padded.nii.gz"
+    sitk.WriteImage(padded_image, filename)
+
+    return filename
 
 def Write(vtkdata, output_name)-> None:
         """

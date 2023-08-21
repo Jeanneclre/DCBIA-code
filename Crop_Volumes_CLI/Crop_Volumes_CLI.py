@@ -61,10 +61,10 @@ def main(args)-> None:
             # Create the output path
             # relative_path = all folder to get to the file we want in the input
             relative_path = os.path.relpath(patient_path,path_input) 
-            filename = os.path.basename(patient_path).split('.')[0]
-            filename = filename + "_"+ suffix_namefile + key
+            filename_interm = os.path.basename(patient_path).split('.')[0]
+            filename = filename_interm + "_"+ suffix_namefile + key
 
-            vtk_filename = filename + "_" + suffix_namefile + "_vtk.vtk"
+            vtk_filename = filename_interm + "_" + suffix_namefile + "_vtk.vtk"
             ScanOutPath = os.path.join(OutputPath,relative_path).replace(os.path.basename(relative_path),filename)
 
             VTKOutPath = os.path.join(OutputPath,relative_path).replace(os.path.basename(relative_path),vtk_filename)
